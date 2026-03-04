@@ -97,12 +97,12 @@ export default function DevelopersSection() {
                 className="bg-bg-light rounded-xl p-8 text-center hover:shadow-lg transition-shadow duration-300 block"
               >
                 <div className="flex justify-center mb-4">
-                  <div className="w-24 h-24 rounded-full bg-white shadow-sm flex items-center justify-center overflow-hidden p-4">
+                  <div className="w-24 h-24 rounded-full bg-white shadow-sm flex items-center justify-center overflow-hidden">
                     {developer.Company?.logo && !logoErrors.has(developer.id) ? (
                       <img
                         src={developer.Company.logo}
                         alt={getDevName(developer)}
-                        className="w-full h-full object-contain"
+                        className="w-full h-full object-cover"
                         onError={() => setLogoErrors(prev => new Set(prev).add(developer.id))}
                       />
                     ) : (
