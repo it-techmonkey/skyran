@@ -256,7 +256,6 @@ export default function Contact() {
               style={{ height: '100%', width: '100%' }}
               scrollWheelZoom
               attributionControl={false}
-              zoomControl={false}
             >
               <TileLayer
                 attribution=""
@@ -264,22 +263,35 @@ export default function Contact() {
               />
               {properties
                 .filter((p) => p.location?.latitude != null && p.location?.longitude != null)
-                .map((property) => (
-                  <Marker
-                    key={property.id}
-                    position={[property.location.latitude, property.location.longitude]}
-                  >
-                    <Popup>
-                      <strong>{property.title}</strong>
-                      <br />
-                      {property.location.area}
-                      <br />
-                      <span className="text-stone-500 text-xs">
-                        {property.location.latitude}, {property.location.longitude}
-                      </span>
-                    </Popup>
-                  </Marker>
-                ))}
+                .map((property) => {
+                  const { latitude, longitude } = property.location;
+                  const mapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+                  return (
+                    <Marker
+                      key={property.id}
+                      position={[latitude, longitude]}
+                    >
+                      <Popup>
+                        <strong>{property.title}</strong>
+                        <br />
+                        {property.location.area}
+                        <br />
+                        <span className="text-stone-500 text-xs">
+                          {latitude}, {longitude}
+                        </span>
+                        <br />
+                        <a
+                          href={mapsUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#3b82f6] text-sm font-medium hover:underline mt-1 inline-block"
+                        >
+                          Open in Google Maps →
+                        </a>
+                      </Popup>
+                    </Marker>
+                  );
+                })}
             </MapContainer>
           </div>
         </div>
