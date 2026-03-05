@@ -1,8 +1,20 @@
 import { useState } from 'react';
 import { MapPin, Phone, Mail, Clock, Send } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { contactInfo } from '../data/contact';
+import { properties } from '../data/properties';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
+
+// Fix Leaflet default marker icon with bundlers (Vite)
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+});
 
 const iconMap = {
   MapPin,
@@ -234,20 +246,41 @@ export default function Contact() {
         </div>
       </section>
 
-      {/* Map Section */}
+      {/* Map Section - property markers with latitude/longitude */}
       <section className="py-16 lg:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="rounded-xl overflow-hidden shadow-xl" style={{ height: '500px' }}>
-            <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3610.5186036815334!2d55.2642223!3d25.1856722!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e5f43348a67e24d%3A0x45f26f4122d391a9!2sOntario%20Tower!5e0!3m2!1sen!2sae!4v1234567890"
-              width="100%"
-              height="100%"
-              style={{ border: 0 }}
-              allowFullScreen=""
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              title="SKYRAN Office Location"
-            ></iframe>
+            <MapContainer
+              center={[25.2048, 55.2708]}
+              zoom={11}
+              style={{ height: '100%', width: '100%' }}
+              scrollWheelZoom
+              attributionControl={false}
+              zoomControl={false}
+            >
+              <TileLayer
+                attribution=""
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              {properties
+                .filter((p) => p.location?.latitude != null && p.location?.longitude != null)
+                .map((property) => (
+                  <Marker
+                    key={property.id}
+                    position={[property.location.latitude, property.location.longitude]}
+                  >
+                    <Popup>
+                      <strong>{property.title}</strong>
+                      <br />
+                      {property.location.area}
+                      <br />
+                      <span className="text-stone-500 text-xs">
+                        {property.location.latitude}, {property.location.longitude}
+                      </span>
+                    </Popup>
+                  </Marker>
+                ))}
+            </MapContainer>
           </div>
         </div>
       </section>

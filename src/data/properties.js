@@ -11,7 +11,9 @@ export const properties = [
         developer: "Emaar Properties",
         location: {
             area: "Downtown Dubai",
-            city: "Dubai"
+            city: "Dubai",
+            latitude: 25.1972,
+            longitude: 55.2744
         },
         description: "Stunning views of Burj Khalifa and the Dubai Fountain. Direct access to Dubai Mall.",
         amenities: ["Pool", "Gym", "Parking", "Concierge", "Security"],
@@ -29,7 +31,9 @@ export const properties = [
         developer: "Nakheel",
         location: {
             area: "Palm Jumeirah",
-            city: "Dubai"
+            city: "Dubai",
+            latitude: 25.1124,
+            longitude: 55.1390
         },
         description: "Exclusive beachfront living on the world-famous Palm Jumeirah. Private beach access.",
         amenities: ["Private Beach", "Pool", "Garden", "Maid's Room", "Security"],
@@ -47,7 +51,9 @@ export const properties = [
         developer: "Emaar Properties",
         location: {
             area: "Dubai Hills Estate",
-            city: "Dubai"
+            city: "Dubai",
+            latitude: 25.1173,
+            longitude: 55.2010
         },
         description: "Ultra-luxury mansion overlooking the championship golf course. The epitome of modern living.",
         amenities: ["Golf Course", "Clubhouse", "Park", "Pool", "Gym"],
