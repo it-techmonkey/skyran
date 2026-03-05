@@ -28,21 +28,32 @@ export default function PropertyDetail() {
   useEffect(() => {
     const fetchProperty = async () => {
       try {
-        const response = await import('../services/projectService').then(module =>
-          module.fetchProjectById(id)
-        );
+        const { getLocalPropertyById, getDescriptionForSlug } = await import('../services/localDataService');
+        let mappedProperty = await getLocalPropertyById(id);
 
+        if (mappedProperty) {
+          const slug = mappedProperty.slug;
+          const richDescription = slug ? await getDescriptionForSlug(slug) : null;
+          if (richDescription) {
+            mappedProperty = { ...mappedProperty, description: richDescription, descriptionIsHtml: true };
+          } else {
+            mappedProperty = { ...mappedProperty, description: mappedProperty.description || 'No description available.', descriptionIsHtml: false };
+          }
+          mappedProperty.amenities = mappedProperty.amenities || ['24/7 Security', 'Parking', 'Gym', 'Pool'];
+          setProperty(mappedProperty);
+          setLoading(false);
+          return;
+        }
+
+        const response = await import('../services/projectService').then((module) => module.fetchProjectById(id));
         let mapped = null;
         if (response.success && response.data) {
           mapped = Array.isArray(response.data) ? response.data[0] : response.data;
         }
 
         if (mapped) {
-          // Normalize status
-          let statusStr = mapped.category || "Available";
+          let statusStr = mapped.category || 'Available';
           if (statusStr === 'Off_plan') statusStr = 'Off-Plan';
-
-          // Normalize bedrooms
           let bedCount = 0;
           const minBed = mapped.min_bedrooms ? mapped.min_bedrooms.toLowerCase() : '';
           if (minBed === 'studio') bedCount = 0;
@@ -51,37 +62,24 @@ export default function PropertyDetail() {
           else if (minBed === 'three') bedCount = 3;
           else if (minBed === 'four') bedCount = 4;
           else if (minBed === 'five' || minBed === 'five+') bedCount = 5;
-          else bedCount = parseInt(minBed) || (mapped.bedrooms || 2);
+          else bedCount = parseInt(minBed, 10) || (mapped.bedrooms || 2);
 
-          // Image Logic: Prioritize image_urls array
           let imageList = [];
-          if (mapped.image_urls && mapped.image_urls.length > 0) {
-            imageList = mapped.image_urls;
-          } else if (mapped.images && mapped.images.length > 0) {
-            imageList = mapped.images;
-          } else {
-            imageList = [mapped.cover_image || "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?w=1200&q=80"];
-          }
+          if (mapped.image_urls?.length) imageList = mapped.image_urls;
+          else if (mapped.images?.length) imageList = mapped.images;
+          else imageList = [mapped.cover_image || 'https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?w=1200&q=80'];
+          if (imageList.length === 0) imageList = ['https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?w=1200&q=80'];
 
-          // Ensure at least one image
-          if (imageList.length === 0) imageList = ["https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?w=1200&q=80"];
-
-          // Developer Name Logic
-          let devName = "Private Seller";
-          if (mapped.developer_name) devName = mapped.developer_name;
-          else if (mapped.Developer?.Company?.name) devName = mapped.Developer.Company.name;
-          else if (mapped.dev?.Company?.name) devName = mapped.dev.Company.name;
-          else if (mapped.developer?.Company?.name) devName = mapped.developer.Company.name;
-          else if (mapped.dev_name) devName = mapped.dev_name;
-
-          // Developer Logo
-          let devLogo = mapped.Developer?.Company?.logo || mapped.dev?.Company?.logo || mapped.developer?.Company?.logo || null;
+          const devName = mapped.developer_name || mapped.Developer?.Company?.name || mapped.dev?.Company?.name || mapped.developer?.Company?.name || mapped.dev_name || 'Private Seller';
+          const devLogo = mapped.Developer?.Company?.logo || mapped.dev?.Company?.logo || mapped.developer?.Company?.logo || null;
+          const slug = mapped.slug || mapped.slug_id;
+          const richDescription = slug ? await getDescriptionForSlug(slug) : null;
 
           const mappedProperty = {
             id: mapped._id || mapped.id,
-            title: mapped.title || mapped.project_name || mapped.name || "Untitled Project",
+            title: mapped.title || mapped.project_name || mapped.name || 'Untitled Project',
             status: [statusStr],
-            location: { area: mapped.locality || mapped.location_name || mapped.address || "Dubai" },
+            location: { area: mapped.locality || mapped.location_name || mapped.address || 'Dubai' },
             price: mapped.min_price || mapped.price || 0,
             developer: devName,
             developerLogo: devLogo,
@@ -90,40 +88,30 @@ export default function PropertyDetail() {
             squareFeet: mapped.min_sq_ft || mapped.size || 0,
             image: imageList[0],
             images: imageList,
-            type: (mapped.type && mapped.type.length > 0) ? mapped.type[0] : (mapped.project_type || "Apartment"),
-            description: mapped.description || "No description available.",
-            amenities: (mapped.amenities && mapped.amenities.length > 0) ? mapped.amenities : ["24/7 Security", "Parking", "Gym", "Pool"]
+            type: (mapped.type?.length ? mapped.type[0] : null) || mapped.project_type || 'Apartment',
+            description: richDescription || mapped.description || 'No description available.',
+            descriptionIsHtml: !!richDescription,
+            amenities: (mapped.amenities?.length && mapped.amenities) || ['24/7 Security', 'Parking', 'Gym', 'Pool']
           };
           setProperty(mappedProperty);
         } else {
           throw new Error('Property not found');
         }
       } catch (err) {
-        console.error("Error fetching property:", err);
-        // Fallback to local data when API fails (e.g. Failed to fetch)
+        console.error('Error fetching property:', err);
         try {
           const { getPropertyById } = await import('../data/properties');
           const local = getPropertyById(id);
           if (local) {
-            const mappedProperty = {
-              id: local.id,
-              title: local.title,
-              status: local.status || ['Available'],
-              location: local.location || { area: 'Dubai' },
-              price: local.price,
-              developer: local.developer || 'Private Seller',
-              developerLogo: null,
-              bedrooms: local.bedrooms ?? 0,
-              bathrooms: local.bathrooms ?? 2,
-              squareFeet: local.squareFeet ?? 0,
-              image: local.image,
+            setProperty({
+              ...local,
               images: [local.image],
-              type: local.type || 'Apartment',
               description: local.description || 'No description available.',
+              descriptionIsHtml: false,
               amenities: Array.isArray(local.amenities) && local.amenities.length > 0 ? local.amenities : ['24/7 Security', 'Parking', 'Gym', 'Pool']
-            };
-            setProperty(mappedProperty);
+            });
             setError(null);
+            setLoading(false);
             return;
           }
         } catch (_) { /* ignore */ }
@@ -133,9 +121,7 @@ export default function PropertyDetail() {
       }
     };
 
-    if (id) {
-      fetchProperty();
-    }
+    if (id) fetchProperty();
   }, [id]);
 
   if (loading) {
@@ -356,9 +342,16 @@ export default function PropertyDetail() {
               {/* About This Property */}
               <div className="bg-white rounded-2xl p-5 md:p-8 border border-stone-100">
                 <h2 className="text-xl font-bold text-stone-800 mb-4">About This Property</h2>
-                <div className="text-stone-600 leading-relaxed whitespace-pre-line">
-                  {property.description}
-                </div>
+                {property.descriptionIsHtml ? (
+                  <div
+                    className="text-stone-600 leading-relaxed [&_p]:mb-3 [&_ul]:my-3 [&_li]:my-1 [&_a]:text-[#3b82f6] [&_a]:underline [&_strong]:font-semibold"
+                    dangerouslySetInnerHTML={{ __html: property.description }}
+                  />
+                ) : (
+                  <div className="text-stone-600 leading-relaxed whitespace-pre-line">
+                    {property.description}
+                  </div>
+                )}
               </div>
 
               {/* Amenities */}

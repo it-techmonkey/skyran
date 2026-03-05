@@ -12,51 +12,19 @@ export default function FeaturedProperties() {
   useEffect(() => {
     const fetchFeatured = async () => {
       try {
-        const response = await import('../../services/projectService').then(module =>
-          module.fetchProjects(1, 3)
-        );
-
-        if (response.success && Array.isArray(response.data)) {
-          const mapped = response.data.map(p => {
-            // Normalize status
-            let statusStr = p.category || "Available";
-            if (statusStr === 'Off_plan') statusStr = 'Off-Plan';
-
-            // Normalize bedrooms
-            let bedCount = 0;
-            const minBed = p.min_bedrooms ? p.min_bedrooms.toLowerCase() : '';
-            if (minBed === 'studio') bedCount = 0;
-            else if (minBed === 'one') bedCount = 1;
-            else if (minBed === 'two') bedCount = 2;
-            else if (minBed === 'three') bedCount = 3;
-            else if (minBed === 'four') bedCount = 4;
-            else if (minBed === 'five' || minBed === 'five+') bedCount = 5;
-            else bedCount = parseInt(minBed) || 2;
-
-            return {
-              id: p.id,
-              title: p.title || p.project_name || "Untitled Property",
-              status: [statusStr],
-              location: { area: p.locality || p.city || "Dubai" },
-              price: p.min_price || 0,
-              developer: p.developer_name || "Private Seller",
-              bedrooms: bedCount,
-              bathrooms: p.min_bathrooms || 2,
-              squareFeet: p.min_sq_ft || p.max_sq_ft || 0,
-              image: (p.image_urls && p.image_urls.length > 0) ? p.image_urls[0] : "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?w=1200&q=80",
-              type: (p.type && p.type.length > 0) ? p.type[0] : "Apartment"
-            };
-          });
-          setProperties(mapped);
-        } else {
-          throw new Error('Failed to load featured properties');
-        }
+        const { fetchLocalProperties } = await import('../../services/localDataService');
+        const all = await fetchLocalProperties();
+        const sorted = [...all].sort((a, b) => {
+          const score = (p) => (p.status || []).some((s) => String(s).toLowerCase() === 'ready') ? 2 : 1;
+          return score(b) - score(a);
+        });
+        setProperties(sorted.slice(0, 6));
+        setError(null);
       } catch (err) {
-        console.error("Error loading featured:", err);
-        // Fallback to local data when API fails
+        console.error('Error loading featured:', err);
         try {
           const { properties: localProperties } = await import('../../data/properties');
-          if (localProperties && localProperties.length > 0) {
+          if (localProperties?.length) {
             setProperties(localProperties.slice(0, 3));
             setError(null);
             return;

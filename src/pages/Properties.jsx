@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, ChevronDown, LayoutGrid, List, Check, Loader2, AlertCircle } from 'lucide-react';
+import { Search, ChevronDown, LayoutGrid, List, Check, Loader2, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import PropertyCard from '../components/home/PropertyCard';
+
+const PROPERTIES_PER_PAGE = 12;
 
 export default function Properties() {
   const [viewMode, setViewMode] = useState('grid');
@@ -33,118 +35,44 @@ export default function Properties() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Pagination & Data Fetching State
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const fetchProperties = async (pageNum = 1, append = false) => {
+  const fetchProperties = async () => {
     try {
-      if (append) setIsLoadingMore(true);
-      else setLoading(true);
+      setLoading(true);
+      const { fetchLocalProperties } = await import('../services/localDataService');
+      const mappedProperties = await fetchLocalProperties();
 
-      const response = await import('../services/projectService').then(module =>
-        module.fetchProjects(pageNum, 8)
-      );
+      // Client-side Sort: Ready > Off-Plan > Others
+      mappedProperties.sort((a, b) => {
+        const getScore = (p) => {
+          const s = (p.status || []).map((x) => String(x).toLowerCase());
+          if (s.includes('ready')) return 3;
+          if (s.includes('off-plan')) return 2;
+          return 1;
+        };
+        return getScore(b) - getScore(a);
+      });
 
-      if (response.success && Array.isArray(response.data)) {
-        const projectsArray = response.data;
-
-        const mappedProperties = projectsArray.map(p => {
-          // Normalize status
-          let statusStr = p.category || "Available";
-          if (statusStr === 'Off_plan') statusStr = 'Off-Plan';
-          const status = [statusStr];
-
-          // Normalize bedrooms to number for filtering
-          let bedCount = 0;
-          const minBed = p.min_bedrooms ? p.min_bedrooms.toLowerCase() : '';
-          if (minBed === 'studio') bedCount = 0;
-          else if (minBed === 'one') bedCount = 1;
-          else if (minBed === 'two') bedCount = 2;
-          else if (minBed === 'three') bedCount = 3;
-          else if (minBed === 'four') bedCount = 4;
-          else if (minBed === 'five' || minBed === 'five+') bedCount = 5;
-          else bedCount = parseInt(minBed) || 2;
-
-          return {
-            id: p.id,
-            title: p.title || p.project_name || "Untitled Project",
-            status: status,
-            location: { area: p.locality || p.city || "Dubai" },
-            price: p.min_price || 0,
-            developer: p.developer_name || "Private Seller", // API doesn't allow include_developer details in the strictly requested curl
-            bedrooms: bedCount,
-            bathrooms: p.min_bathrooms || 2,
-            squareFeet: p.min_sq_ft || p.max_sq_ft || 0,
-            image: (p.image_urls && p.image_urls.length > 0) ? p.image_urls[0] : "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?w=1200&q=80",
-            type: (p.type && p.type.length > 0) ? p.type[0] : "Apartment",
-            description: p.description
-          };
-        });
-
-        // Client-side Sort: Ready > Off-Plan > Others
-        mappedProperties.sort((a, b) => {
-          const getScore = (p) => {
-            const s = p.status.map(x => x.toLowerCase());
-            if (s.includes('ready')) return 3;
-            if (s.includes('off-plan')) return 2;
-            return 1;
-          };
-          return getScore(b) - getScore(a);
-        });
-
-        if (append) {
-          setAllProperties(prev => [...prev, ...mappedProperties]);
-        } else {
-          setAllProperties(mappedProperties);
-        }
-
-        // If we got fewer items than limit, we reached the end
-        if (projectsArray.length < 8) {
-          setHasMore(false);
-        } else {
-          setHasMore(true);
-        }
-
-      } else {
-        throw new Error(response.message || 'Failed to fetch projects');
-      }
+      setAllProperties(mappedProperties);
+      setCurrentPage(1);
+      setError(null);
     } catch (err) {
-      console.error("Error fetching properties:", err);
-      if (!append) {
-        // Fallback to local data when API fails (e.g. network, CORS, or server down)
-        try {
-          const { properties: localProperties } = await import('../data/properties');
-          if (localProperties && localProperties.length > 0) {
-            setAllProperties(localProperties);
-            setError(null);
-            setHasMore(false);
-            return;
-          }
-        } catch (_) { /* ignore */ }
-        setError(err.message);
-      }
+      console.error('Error fetching properties:', err);
+      setError(err.message);
     } finally {
       setLoading(false);
-      setIsLoadingMore(false);
     }
   };
 
   useEffect(() => {
-    fetchProperties(1, false);
+    fetchProperties();
   }, []);
 
-  const handleLoadMore = () => {
-    const nextPage = page + 1;
-    setPage(nextPage);
-    fetchProperties(nextPage, true);
-  };
-
   // Derive options from dynamic data
-  const locations = ['All Locations', ...new Set(allProperties.map(p => p.location.area))];
-  const types = ['All Types', ...new Set(allProperties.map(p => p.type).filter(Boolean))];
-  const developers = ['All Developers', ...new Set(allProperties.map(p => p.developer))];
+  const locations = ['All Locations', ...new Set(allProperties.map((p) => p.location?.area).filter(Boolean))];
+  const types = ['All Types', ...new Set(allProperties.map((p) => p.type).filter(Boolean))];
+  const developers = ['All Developers', ...new Set(allProperties.map((p) => p.developer).filter(Boolean))];
   // Keep static options for consistent UI
   const statuses = ['All Status', 'Ready', 'Off-Plan', 'Under Construction'];
   const beds = ['Any Beds', 'Studio (0)', '1', '2', '3', '4', '5+'];
@@ -195,6 +123,29 @@ export default function Properties() {
 
     return true;
   });
+
+  // Pagination: reset to page 1 when filters/search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filters.location, filters.type, filters.developer, filters.status, filters.beds, filters.price]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredProperties.length / PROPERTIES_PER_PAGE));
+  const startIndex = (currentPage - 1) * PROPERTIES_PER_PAGE;
+  const paginatedProperties = filteredProperties.slice(startIndex, startIndex + PROPERTIES_PER_PAGE);
+
+  const getPageNumbers = () => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const pages = [1];
+    if (currentPage > 3) pages.push('…');
+    const start = Math.max(2, currentPage - 1);
+    const end = Math.min(totalPages - 1, currentPage + 1);
+    for (let i = start; i <= end; i++) {
+      if (!pages.includes(i)) pages.push(i);
+    }
+    if (currentPage < totalPages - 2) pages.push('…');
+    if (totalPages > 1) pages.push(totalPages);
+    return pages;
+  };
 
   const FilterDropdown = ({ title, options, activeValue, category }) => (
     <div className="relative">
@@ -322,9 +273,14 @@ export default function Properties() {
         </div>
 
         {/* Results Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <p className="text-stone-600">
             <span className="font-semibold text-stone-800">{filteredProperties.length}</span> properties found
+            {filteredProperties.length > 0 && (
+              <span className="text-stone-500 ml-1">
+                (showing {startIndex + 1}–{Math.min(startIndex + PROPERTIES_PER_PAGE, filteredProperties.length)})
+              </span>
+            )}
           </p>
           <div className="flex items-center gap-2">
             <button
@@ -346,8 +302,8 @@ export default function Properties() {
 
         {/* Properties Grid */}
         <div className={`grid gap-6 ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
-          {filteredProperties.length > 0 ? (
-            filteredProperties.map((property) => (
+          {paginatedProperties.length > 0 ? (
+            paginatedProperties.map((property) => (
               <PropertyCard key={property.id} property={property} />
             ))
           ) : (
@@ -370,25 +326,56 @@ export default function Properties() {
           )}
         </div>
 
-        {/* Load More Button */}
-        {hasMore && !loading && !searchQuery && (
-          <div className="mt-12 text-center">
+        {/* Pagination */}
+        {totalPages > 1 && filteredProperties.length > 0 && (
+          <nav className="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="Pagination">
             <button
-              onClick={handleLoadMore}
-              disabled={isLoadingMore}
-              className="inline-flex items-center gap-2 px-8 py-3 bg-white border border-stone-200 text-stone-700 font-medium rounded-full hover:bg-stone-50 hover:border-stone-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="inline-flex items-center gap-1 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 disabled:pointer-events-none disabled:opacity-50"
+              aria-label="Previous page"
             >
-              {isLoadingMore ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Loading...
-                </>
-              ) : (
-                'View More Properties'
-              )}
+              <ChevronLeft className="h-4 w-4" />
+              Previous
             </button>
-          </div>
+            <div className="flex items-center gap-1">
+              {getPageNumbers().map((page, i) =>
+                page === '…' ? (
+                  <span key={`ellipsis-${i}`} className="px-2 text-stone-400">
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setCurrentPage(page)}
+                    className={`min-w-[2.25rem] rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      currentPage === page
+                        ? 'bg-[#1a1a2e] text-white'
+                        : 'border border-stone-200 bg-white text-stone-700 hover:bg-stone-50'
+                    }`}
+                    aria-label={`Page ${page}`}
+                    aria-current={currentPage === page ? 'page' : undefined}
+                  >
+                    {page}
+                  </button>
+                )
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="inline-flex items-center gap-1 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 disabled:pointer-events-none disabled:opacity-50"
+              aria-label="Next page"
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </nav>
         )}
+
       </div>
     </div>
   );
