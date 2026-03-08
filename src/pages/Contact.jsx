@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MapPin, Phone, Mail, Clock, Send } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { contactInfo } from '../data/contact';
-import { properties } from '../data/properties';
+import { properties as staticProperties } from '../data/properties';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 
@@ -32,6 +32,23 @@ export default function Contact() {
   });
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
+  const [mapProperties, setMapProperties] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { fetchLocalPropertiesWithCoords } = await import('../services/localDataService');
+        const withCoords = await fetchLocalPropertiesWithCoords();
+        if (!cancelled && Array.isArray(withCoords) && withCoords.length > 0) {
+          setMapProperties(withCoords);
+          return;
+        }
+      } catch (_) { /* ignore */ }
+      if (!cancelled) setMapProperties(staticProperties);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -261,23 +278,29 @@ export default function Contact() {
                 attribution=""
                 url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
               />
-              {properties
-                .filter((p) => p.location?.latitude != null && p.location?.longitude != null)
+              {mapProperties
+                .filter((p) => {
+                  const lat = p.latitude ?? p.location?.latitude;
+                  const lng = p.longitude ?? p.location?.longitude;
+                  return lat != null && lng != null;
+                })
                 .map((property) => {
-                  const { latitude, longitude } = property.location;
-                  const mapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+                  const lat = property.latitude ?? property.location?.latitude;
+                  const lng = property.longitude ?? property.location?.longitude;
+                  const area = property.location?.area ?? 'Location';
+                  const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
                   return (
                     <Marker
                       key={property.id}
-                      position={[latitude, longitude]}
+                      position={[lat, lng]}
                     >
                       <Popup>
                         <strong>{property.title}</strong>
                         <br />
-                        {property.location.area}
+                        {area}
                         <br />
                         <span className="text-stone-500 text-xs">
-                          {latitude}, {longitude}
+                          {lat}, {lng}
                         </span>
                         <br />
                         <a
