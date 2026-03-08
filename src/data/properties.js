@@ -58,6 +58,126 @@ export const properties = [
         description: "Ultra-luxury mansion overlooking the championship golf course. The epitome of modern living.",
         amenities: ["Golf Course", "Clubhouse", "Park", "Pool", "Gym"],
         image: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=1200&q=80"
+    },
+    {
+        id: 4,
+        title: "Business Bay Penthouse",
+        type: "Apartment",
+        status: ["Ready"],
+        price: 4200000,
+        bedrooms: 3,
+        bathrooms: 3,
+        squareFeet: 2800,
+        developer: "Emaar Properties",
+        location: {
+            area: "Business Bay",
+            city: "Dubai",
+            latitude: 25.1852,
+            longitude: 55.2810
+        },
+        description: "Stunning penthouse with panoramic views of Dubai Canal and skyline.",
+        amenities: ["Pool", "Gym", "Concierge", "Parking", "Security"],
+        image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200&q=80"
+    },
+    {
+        id: 5,
+        title: "JBR Beachfront Apartment",
+        type: "Apartment",
+        status: ["Ready"],
+        price: 3800000,
+        bedrooms: 2,
+        bathrooms: 2,
+        squareFeet: 1500,
+        developer: "Meraas",
+        location: {
+            area: "Jumeirah Beach Residence",
+            city: "Dubai",
+            latitude: 25.0782,
+            longitude: 55.1280
+        },
+        description: "Beachfront living with direct access to the walk and sea views.",
+        amenities: ["Beach Access", "Pool", "Gym", "Parking"],
+        image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200&q=80"
+    },
+    {
+        id: 6,
+        title: "Arabian Ranches Family Villa",
+        type: "Villa",
+        status: ["Ready"],
+        price: 5200000,
+        bedrooms: 4,
+        bathrooms: 5,
+        squareFeet: 3500,
+        developer: "Emaar Properties",
+        location: {
+            area: "Arabian Ranches",
+            city: "Dubai",
+            latitude: 25.0595,
+            longitude: 55.3650
+        },
+        description: "Spacious family villa in a peaceful community with golf and parks.",
+        amenities: ["Golf", "Park", "Pool", "Garden", "Security"],
+        image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200&q=80"
+    },
+    {
+        id: 7,
+        title: "Dubai Marina Tower",
+        type: "Apartment",
+        status: ["Off-Plan"],
+        price: 1950000,
+        bedrooms: 1,
+        bathrooms: 1,
+        squareFeet: 750,
+        developer: "DAMAC Properties",
+        location: {
+            area: "Dubai Marina",
+            city: "Dubai",
+            latitude: 25.0800,
+            longitude: 55.1390
+        },
+        description: "Modern studio and one-bed units with marina and sea views.",
+        amenities: ["Marina View", "Gym", "Pool", "Parking"],
+        image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&q=80"
+    },
+    {
+        id: 8,
+        title: "Meydan Heights Apartment",
+        type: "Apartment",
+        status: ["Ready"],
+        price: 3100000,
+        bedrooms: 2,
+        bathrooms: 2,
+        squareFeet: 1400,
+        developer: "Sobha Realty",
+        location: {
+            area: "Meydan",
+            city: "Dubai",
+            latitude: 25.1310,
+            longitude: 55.2080
+        },
+        description: "Contemporary apartment near Meydan Racecourse and Downtown.",
+        amenities: ["Pool", "Gym", "Parking", "Concierge"],
+        image: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=1200&q=80"
+    },
+    {
+        id: 9,
+        title: "Creek Beach Residency",
+        type: "Apartment",
+        status: ["Off-Plan"],
+        price: 1650000,
+        bedrooms: 1,
+        bathrooms: 1,
+        squareFeet: 650,
+        developer: "Emaar Properties",
+        location: {
+            area: "Dubai Creek Harbour",
+            city: "Dubai",
+            latitude: 25.1930,
+            longitude: 55.3280
+        },
+        description: "Affordable off-plan units with creek and city views.",
+        amenities: ["Pool", "Gym", "Beach", "Parking"],
+        image: "https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=1200&q=80"
     }
 ];
 

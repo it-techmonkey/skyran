@@ -259,7 +259,7 @@ export default function Contact() {
             >
               <TileLayer
                 attribution=""
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
               />
               {properties
                 .filter((p) => p.location?.latitude != null && p.location?.longitude != null)
