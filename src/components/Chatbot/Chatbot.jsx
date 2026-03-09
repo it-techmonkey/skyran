@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, X, MessageCircle } from "lucide-react";
 import { createPortal } from "react-dom";
+import { Link } from "react-router-dom";
 import logo from '../../assets/skyran_logo.png';
 import { fetchLocalProperties, getDescriptionForProperty } from '../../services/localDataService';
 
@@ -463,10 +464,9 @@ export default function ChatBot({ isOpen: externalIsOpen, onClose } = {}) {
                                                         {msg.properties && msg.properties.length > 0 && (
                                                             <div className="grid gap-2">
                                                                 {msg.properties.map(p => (
-                                                                    <a
+                                                                    <Link
                                                                         key={p.id}
-                                                                        href={`/properties/${p.id}`}
-                                                                        target="_blank"
+                                                                        to={`/properties/${p.id}`}
                                                                         className="block bg-white border border-gray-200 rounded-lg p-2 hover:shadow-md transition-shadow flex gap-3 items-center group"
                                                                     >
                                                                         <div className="w-12 h-12 rounded bg-gray-100 overflow-hidden flex-shrink-0">
@@ -476,7 +476,7 @@ export default function ChatBot({ isOpen: externalIsOpen, onClose } = {}) {
                                                                             <h4 className="text-sm font-semibold truncate text-gray-800 group-hover:text-[#1A1F56]">{p.title}</h4>
                                                                             <p className="text-xs text-[#1A1F56] font-bold">AED {formatPrice(p.price)}</p>
                                                                         </div>
-                                                                    </a>
+                                                                    </Link>
                                                                 ))}
                                                             </div>
                                                         )}
