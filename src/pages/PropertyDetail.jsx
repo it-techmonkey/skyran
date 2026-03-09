@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, ChevronLeft, ChevronRight, Share2, Heart, MapPin, Bed, Bath, Square, Building2, Mail, Calendar, Phone, Check, Loader2, AlertCircle } from 'lucide-react';
 
 // Helper functions (moved from data/properties.js to decouple)
@@ -18,7 +18,6 @@ const formatSquareFeet = (sqft) => {
 
 export default function PropertyDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -176,6 +175,16 @@ export default function PropertyDetail() {
       alert('Link copied to clipboard!');
     }
   };
+
+  const enquirySubject = encodeURIComponent(`Enquiry for ${property.title}`);
+  const enquiryBody = encodeURIComponent(
+    `Hello SkyRan Team,\n\nI am interested in this property:\n${property.title}\nLocation: ${property.location?.area || 'Dubai'}\nPrice: ${formatPrice(property.price)}\nLink: ${window.location.href}\n\nPlease contact me with more details.\n`
+  );
+  const enquiryMailto = `mailto:info@skyran.ae?subject=${enquirySubject}&body=${enquiryBody}`;
+  const whatsappText = encodeURIComponent(
+    `Hello, I am interested in "${property.title}" (${formatPrice(property.price)}). Please share more details.\n${window.location.href}`
+  );
+  const whatsappUrl = `https://wa.me/97142725641?text=${whatsappText}`;
 
   return (
     <main className="pb-24 lg:pb-0"> {/* Add padding bottom for mobile sticky bar */}
@@ -401,16 +410,20 @@ export default function PropertyDetail() {
                     Contact our team for more information or to schedule a viewing.
                   </p>
                   <div className="space-y-3">
-                    <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 shadow h-9 px-4 py-2 w-full bg-[#1a1a1a] text-white hover:bg-[#2d2d2d]">
-                      <Mail className="w-4 h-4" />
-                      Request Information
-                    </button>
-                    <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border bg-background shadow-sm hover:text-accent-foreground h-9 px-4 py-2 w-full border-[#3b82f6] text-[#3b82f6] hover:bg-[#3b82f6]/10">
-                      <Calendar className="w-4 h-4" />
-                      Schedule Viewing
-                    </button>
+                    <a href={enquiryMailto} className="block w-full">
+                      <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring shadow h-9 px-4 py-2 w-full bg-[#1a1a1a] text-white hover:bg-[#2d2d2d]">
+                        <Mail className="w-4 h-4" />
+                        Request Information
+                      </button>
+                    </a>
+                    <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="block w-full">
+                      <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring border bg-background shadow-sm h-9 px-4 py-2 w-full border-[#3b82f6] text-[#3b82f6] hover:bg-[#3b82f6]/10">
+                        <Calendar className="w-4 h-4" />
+                        Schedule Viewing
+                      </button>
+                    </a>
                     <a href="tel:+97142725641" className="block w-full">
-                      <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 w-full">
+                      <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 w-full">
                         <Phone className="w-4 h-4" />
                         +971 4 272 5641
                       </button>
@@ -453,10 +466,12 @@ export default function PropertyDetail() {
             Call
           </button>
         </a>
-        <button className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg text-sm font-medium h-12 bg-[#1a1a1a] text-white hover:bg-[#2d2d2d]">
-          <Calendar className="w-4 h-4" />
-          Enquire
-        </button>
+        <a href={enquiryMailto} className="flex-1">
+          <button className="w-full inline-flex items-center justify-center gap-2 rounded-lg text-sm font-medium h-12 bg-[#1a1a1a] text-white hover:bg-[#2d2d2d]">
+            <Calendar className="w-4 h-4" />
+            Enquire
+          </button>
+        </a>
       </div>
 
     </main>
