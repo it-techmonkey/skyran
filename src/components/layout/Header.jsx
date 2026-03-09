@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import Button from '../ui/Button';
@@ -7,6 +7,10 @@ import logo from '../../assets/skyran_logo.png';
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
   const navLinks = [
     { path: '/', label: 'Home' },
@@ -29,11 +33,11 @@ export default function Header() {
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
           <Link to="/" className="flex-shrink-0">
-            <img src={logo} alt="Skyran Logo" className="h-12 w-auto object-contain" />
+            <img src={logo} alt="Skyran Logo" className="h-10 sm:h-11 lg:h-12 w-auto object-contain" />
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden md:flex items-center space-x-5 lg:space-x-8">
             {navLinks.map((link) => (
               <Link
                 key={link.path}

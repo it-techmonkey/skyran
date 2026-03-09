@@ -10,7 +10,7 @@ export default function Footer() {
           {/* Company Info */}
           <div className="lg:col-span-1">
             <Link to="/" className="inline-block mb-4">
-              <img src="/skyran_logo.png" alt="Skyran Logo" className="h-10 w-auto object-contain" />
+              <img src={logo} alt="Skyran Logo" className="h-10 w-auto object-contain" />
             </Link>
             <p className="text-sm leading-relaxed text-gray-400">
               Your trusted partner in finding the perfect property in Dubai. We connect you with the finest developments from top-tier developers.
@@ -108,7 +108,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-gray-700 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-gray-400">
+        <div className="border-t border-gray-700 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-gray-400 text-center md:text-left">
           <p>Copyright © 2025 SkyRan Real Estate L.L.C - All Rights Reserved.</p>
 
         </div>

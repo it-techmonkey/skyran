@@ -94,7 +94,7 @@ export default function DevelopersSection() {
               <Link
                 key={developer.id}
                 to={`/developers/${developer.id}`}
-                className="bg-bg-light rounded-xl p-8 text-center hover:shadow-lg transition-shadow duration-300 block"
+                className="bg-bg-light rounded-xl p-5 sm:p-8 text-center hover:shadow-lg transition-shadow duration-300 block"
               >
                 <div className="flex justify-center mb-4">
                   <div className="w-24 h-24 rounded-full bg-white shadow-sm flex items-center justify-center overflow-hidden">

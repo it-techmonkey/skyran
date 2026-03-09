@@ -152,7 +152,7 @@ export default function Contact() {
             </div>
 
             {/* Right Column - Contact Form */}
-            <div className="bg-white rounded-xl p-8 shadow-md">
+            <div className="bg-white rounded-xl p-5 sm:p-6 lg:p-8 shadow-md">
               <h2 className="text-2xl font-bold text-text-dark mb-2">
                 Send Us a Message
               </h2>
@@ -266,7 +266,7 @@ export default function Contact() {
       {/* Map Section - property markers with latitude/longitude */}
       <section className="py-16 lg:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="rounded-xl overflow-hidden shadow-xl" style={{ height: '500px' }}>
+          <div className="rounded-xl overflow-hidden shadow-xl h-[340px] sm:h-[420px] md:h-[500px]">
             <MapContainer
               center={[25.2048, 55.2708]}
               zoom={11}

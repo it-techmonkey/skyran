@@ -29,7 +29,7 @@ export default function About() {
 
       {/* Our Story Section */}
       <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             {/* Left Column - Text */}
             <div>
@@ -43,11 +43,11 @@ export default function About() {
               </p>
               
               {/* Statistics Grid */}
-              <div className="grid grid-cols-2 gap-6 mt-8">
+              <div className="grid grid-cols-2 gap-4 sm:gap-6 mt-8">
                 {aboutStats.map((stat, index) => (
                   <div key={index}>
-                    <p className="text-3xl font-bold text-[#3b82f6]">{stat.value}</p>
-                    <p className="text-stone-500 mt-1">{stat.label}</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-[#3b82f6]">{stat.value}</p>
+                    <p className="text-sm sm:text-base text-stone-500 mt-1">{stat.label}</p>
                   </div>
                 ))}
               </div>
@@ -61,7 +61,7 @@ export default function About() {
                 className="rounded-2xl shadow-2xl"
               />
               {/* RERA Badge */}
-              <div className="absolute -bottom-6 -left-6 bg-white rounded-xl p-6 shadow-xl">
+              <div className="mt-4 sm:mt-0 sm:absolute sm:-bottom-6 sm:-left-6 bg-white rounded-xl p-4 sm:p-6 shadow-xl max-w-[240px]">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-[#3b82f6]/10 flex items-center justify-center">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-award w-6 h-6 text-[#3b82f6]">
@@ -117,7 +117,7 @@ export default function About() {
 
       {/* Team Section */}
       <section className="py-16 lg:py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <span className="text-[#3b82f6] text-sm font-medium uppercase tracking-wider">Our Team</span>
             <h2 className="text-3xl md:text-4xl font-bold text-stone-800 mt-2">Meet The Experts</h2>
@@ -126,7 +126,7 @@ export default function About() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 md:gap-8">
             {team.map((member) => (
               <div key={member.id} className="text-center group">
                 <div className="relative aspect-[3/4] rounded-2xl overflow-hidden mb-4">
@@ -149,7 +149,7 @@ export default function About() {
 
       {/* CTA Section */}
       <section className="bg-[#1a1a2e] py-16 lg:py-20">
-        <div className="max-w-4xl mx-auto px-6 text-center">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white">Ready to Start Your Journey?</h2>
           <p className="text-stone-400 mt-4 text-lg">Let our experts guide you to your perfect property in Dubai.</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">

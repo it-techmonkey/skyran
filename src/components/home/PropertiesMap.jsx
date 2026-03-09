@@ -42,7 +42,7 @@ export default function PropertiesMap() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl lg:text-4xl font-bold text-text-dark mb-4">Properties on the Map</h2>
           <p className="text-text-gray max-w-2xl mb-8">Explore our listings by location.</p>
-          <div className="rounded-2xl overflow-hidden shadow-lg bg-stone-100 flex items-center justify-center" style={{ height: '480px' }}>
+          <div className="rounded-2xl overflow-hidden shadow-lg bg-stone-100 flex items-center justify-center h-[320px] sm:h-[420px] md:h-[480px]">
             <Loader2 className="w-10 h-10 text-primary-blue animate-spin" />
           </div>
         </div>
@@ -74,7 +74,7 @@ export default function PropertiesMap() {
         <p className="text-text-gray max-w-2xl mb-8">
           Explore our listings by location. Each circle represents a development.
         </p>
-        <div className="rounded-2xl overflow-hidden shadow-lg border border-stone-200" style={{ height: '480px' }}>
+        <div className="rounded-2xl overflow-hidden shadow-lg border border-stone-200 h-[320px] sm:h-[420px] md:h-[480px]">
           <MapContainer
             center={defaultCenter}
             zoom={defaultZoom}

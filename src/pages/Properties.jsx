@@ -1,10 +1,20 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Search, ChevronDown, LayoutGrid, List, Check, Loader2, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import PropertyCard from '../components/home/PropertyCard';
 
 const PROPERTIES_PER_PAGE = 12;
+const DEFAULT_FILTERS = {
+  location: 'All Locations',
+  type: 'All Types',
+  developer: 'All Developers',
+  status: 'All Status',
+  beds: 'Any Beds',
+  price: 'Any Price'
+};
 
 export default function Properties() {
+  const [searchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [allProperties, setAllProperties] = useState([]);
@@ -13,14 +23,7 @@ export default function Properties() {
 
   // Filter States
   const [activeDropdown, setActiveDropdown] = useState(null);
-  const [filters, setFilters] = useState({
-    location: 'All Locations',
-    type: 'All Types',
-    developer: 'All Developers',
-    status: 'All Status',
-    beds: 'Any Beds',
-    price: 'Any Price'
-  });
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
   const dropdownRef = useRef(null);
 
@@ -36,6 +39,12 @@ export default function Properties() {
   }, []);
 
   const [currentPage, setCurrentPage] = useState(1);
+  const listingMode = String(searchParams.get('listing') || 'buy').toLowerCase();
+  const heroLocation = String(searchParams.get('location') || '').trim();
+  const heroType = String(searchParams.get('type') || '').trim();
+  const presetDeveloper = searchParams.get('developer') || '';
+  const presetSearch = searchParams.get('q') || '';
+  const hasAppliedUrlPresetRef = useRef(false);
 
   const fetchProperties = async () => {
     try {
@@ -70,13 +79,52 @@ export default function Properties() {
   }, []);
 
   // Derive options from dynamic data
-  const locations = ['All Locations', ...new Set(allProperties.map((p) => p.location?.area).filter(Boolean))];
-  const types = ['All Types', ...new Set(allProperties.map((p) => p.type).filter(Boolean))];
-  const developers = ['All Developers', ...new Set(allProperties.map((p) => p.developer).filter(Boolean))];
+  const locations = useMemo(
+    () => ['All Locations', ...new Set(allProperties.map((p) => p.location?.area).filter(Boolean))],
+    [allProperties]
+  );
+  const types = useMemo(() => {
+    const preferred = ['Apartment', 'Townhouse', 'Studio', 'Villa', 'Penthouse'];
+    const dynamic = Array.from(new Set(allProperties.map((p) => p.type).filter(Boolean)));
+    const ordered = [...preferred.filter((t) => dynamic.includes(t)), ...dynamic.filter((t) => !preferred.includes(t))];
+    return ['All Types', ...ordered];
+  }, [allProperties]);
+  const developers = useMemo(
+    () => ['All Developers', ...new Set(allProperties.map((p) => p.developer).filter(Boolean))],
+    [allProperties]
+  );
   // Keep static options for consistent UI
   const statuses = ['All Status', 'Ready', 'Off-Plan', 'Under Construction'];
   const beds = ['Any Beds', 'Studio (0)', '1', '2', '3', '4', '5+'];
   const prices = ['Any Price', 'Under 1M', '1M - 3M', '3M - 5M', '5M - 10M', 'Above 10M'];
+
+  useEffect(() => {
+    if (!allProperties.length) return;
+    if (hasAppliedUrlPresetRef.current) return;
+
+    const findMatch = (options, value) =>
+      options.find((option) => String(option).trim().toLowerCase() === String(value).trim().toLowerCase());
+
+    const nextFilters = { ...DEFAULT_FILTERS };
+    nextFilters.status =
+      listingMode === 'off-plan'
+        ? 'Off-Plan'
+        : listingMode === 'rent'
+          ? 'Ready'
+          : DEFAULT_FILTERS.status;
+    nextFilters.location = findMatch(locations, heroLocation) || DEFAULT_FILTERS.location;
+    nextFilters.type = findMatch(types, heroType) || DEFAULT_FILTERS.type;
+    nextFilters.developer = findMatch(developers, presetDeveloper) || DEFAULT_FILTERS.developer;
+
+    setFilters(nextFilters);
+
+    const fallbackParts = [];
+    if (heroLocation && nextFilters.location === DEFAULT_FILTERS.location) fallbackParts.push(heroLocation);
+    if (heroType && nextFilters.type === DEFAULT_FILTERS.type) fallbackParts.push(heroType);
+    if (presetSearch) fallbackParts.push(presetSearch);
+    setSearchQuery(fallbackParts.join(' ').trim());
+    hasAppliedUrlPresetRef.current = true;
+  }, [allProperties, listingMode, heroLocation, heroType, presetDeveloper, presetSearch, locations, types, developers]);
 
   const handleFilterSelect = (category, value) => {
     setFilters(prev => ({ ...prev, [category]: value }));
@@ -85,19 +133,23 @@ export default function Properties() {
 
   // Client-side Filtering Logic (Preserved)
   const filteredProperties = allProperties.filter(property => {
+    const normalizedArea = String(property.location?.area || '').trim().toLowerCase();
+    const normalizedType = String(property.type || '').trim().toLowerCase();
+    const normalizedDeveloper = String(property.developer || '').trim().toLowerCase();
+
     // Search Query
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const match = property.title.toLowerCase().includes(query) ||
-        property.location.area.toLowerCase().includes(query) ||
-        property.developer.toLowerCase().includes(query);
+      const query = searchQuery.trim().toLowerCase();
+      const match = String(property.title || '').toLowerCase().includes(query) ||
+        normalizedArea.includes(query) ||
+        normalizedDeveloper.includes(query);
       if (!match) return false;
     }
 
     // Dropdown Filters
-    if (filters.location !== 'All Locations' && property.location.area !== filters.location) return false;
-    if (filters.type !== 'All Types' && property.type !== filters.type) return false;
-    if (filters.developer !== 'All Developers' && property.developer !== filters.developer) return false;
+    if (filters.location !== 'All Locations' && normalizedArea !== String(filters.location).trim().toLowerCase()) return false;
+    if (filters.type !== 'All Types' && normalizedType !== String(filters.type).trim().toLowerCase()) return false;
+    if (filters.developer !== 'All Developers' && normalizedDeveloper !== String(filters.developer).trim().toLowerCase()) return false;
 
     if (filters.status !== 'All Status') {
       // Check if any status in the property array matches the filter or vice versa
@@ -208,15 +260,18 @@ export default function Properties() {
   return (
     <div className="min-h-screen bg-white" onClick={() => setActiveDropdown(null)}>
       {/* Hero Section */}
-      <div className="bg-[#1a1a2e] py-16">
-        <div className="max-w-7xl mx-auto px-6">
+      <div className="bg-[#1a1a2e] py-14 md:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-3xl md:text-4xl font-bold text-white">Explore Properties</h1>
-          <p className="text-stone-400 mt-3 max-w-xl">Discover Dubai's finest properties from world-renowned developers. Use the filters below to find your perfect match.</p>
+          <p className="text-stone-400 mt-3 max-w-xl">
+            Discover Dubai's finest properties from world-renowned developers. Use the filters below to find your perfect match.
+            {listingMode === 'off-plan' ? ' Showing off-plan opportunities.' : listingMode === 'rent' ? ' Showing ready-to-move properties for rent mode.' : ''}
+          </p>
         </div>
       </div>
 
       {/* Filters and Grid Section */}
-      <div className="max-w-7xl mx-auto px-6 py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
         {/* Filter Card */}
         <div className="mb-8" ref={dropdownRef}>
           <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-6">
@@ -231,7 +286,7 @@ export default function Properties() {
               />
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               <FilterDropdown
                 title="All Locations"
                 options={locations}
@@ -310,14 +365,7 @@ export default function Properties() {
             <div className="col-span-full py-20 text-center text-stone-500">
               <p className="text-lg">No properties found matching your criteria.</p>
               <button
-                onClick={() => setFilters({
-                  location: 'All Locations',
-                  type: 'All Types',
-                  developer: 'All Developers',
-                  status: 'All Status',
-                  beds: 'Any Beds',
-                  price: 'Any Price'
-                })}
+                onClick={() => setFilters({ ...DEFAULT_FILTERS })}
                 className="mt-4 text-[#3b82f6] hover:underline"
               >
                 Clear all filters

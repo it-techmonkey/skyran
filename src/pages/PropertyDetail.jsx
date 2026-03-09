@@ -28,12 +28,11 @@ export default function PropertyDetail() {
   useEffect(() => {
     const fetchProperty = async () => {
       try {
-        const { getLocalPropertyById, getDescriptionForSlug } = await import('../services/localDataService');
+        const { getLocalPropertyById, getDescriptionForProperty } = await import('../services/localDataService');
         let mappedProperty = await getLocalPropertyById(id);
 
         if (mappedProperty) {
-          const slug = mappedProperty.slug;
-          const richDescription = slug ? await getDescriptionForSlug(slug) : null;
+          const richDescription = await getDescriptionForProperty(mappedProperty);
           if (richDescription) {
             mappedProperty = { ...mappedProperty, description: richDescription, descriptionIsHtml: true };
           } else {
@@ -72,8 +71,11 @@ export default function PropertyDetail() {
 
           const devName = mapped.developer_name || mapped.Developer?.Company?.name || mapped.dev?.Company?.name || mapped.developer?.Company?.name || mapped.dev_name || 'Private Seller';
           const devLogo = mapped.Developer?.Company?.logo || mapped.dev?.Company?.logo || mapped.developer?.Company?.logo || null;
-          const slug = mapped.slug || mapped.slug_id;
-          const richDescription = slug ? await getDescriptionForSlug(slug) : null;
+          const richDescription = await getDescriptionForProperty({
+            slug: mapped.slug || mapped.slug_id,
+            title: mapped.title || mapped.project_name || mapped.name,
+            id: mapped._id || mapped.id,
+          });
 
           const mappedProperty = {
             id: mapped._id || mapped.id,

@@ -159,7 +159,7 @@ export default function DeveloperDetail() {
       <div className="min-h-screen bg-stone-50">
         {/* Back Button Section */}
         <div className="bg-white border-b border-stone-100">
-          <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <Link
               to="/developers"
               className="inline-flex items-center gap-2 text-stone-600 hover:text-[#3b82f6] transition-colors"
@@ -171,9 +171,9 @@ export default function DeveloperDetail() {
         </div>
 
         {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-6 py-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
           {/* Developer Header */}
-          <div className="bg-white rounded-2xl p-8 border border-stone-100 mb-8">
+          <div className="bg-white rounded-2xl p-5 sm:p-6 md:p-8 border border-stone-100 mb-8">
             <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
               {/* Icon */}
               <div className="w-32 h-32 rounded-2xl bg-stone-50 flex items-center justify-center flex-shrink-0 overflow-hidden">
@@ -186,7 +186,7 @@ export default function DeveloperDetail() {
 
               {/* Developer Info */}
               <div className="flex-1">
-                <h1 className="text-3xl md:text-4xl font-bold text-stone-800 mb-4">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-stone-800 mb-4">
                   {developer.name}
                 </h1>
                 <p className="text-stone-600 leading-relaxed mb-6">
@@ -223,7 +223,7 @@ export default function DeveloperDetail() {
           )}
 
           {/* Contact Section */}
-          <div className="bg-white rounded-2xl p-8 border border-stone-100">
+          <div className="bg-white rounded-2xl p-5 sm:p-6 md:p-8 border border-stone-100">
             <h2 className="text-2xl font-bold text-stone-800 mb-6">
               Contact {developer.name}
             </h2>

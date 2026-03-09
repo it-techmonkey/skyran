@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, X, MessageCircle, Building } from "lucide-react";
+import { Send, X, MessageCircle } from "lucide-react";
 import { createPortal } from "react-dom";
 import logo from '../../assets/skyran_logo.png';
+import { fetchLocalProperties, getDescriptionForProperty } from '../../services/localDataService';
 
 export default function ChatBot({ isOpen: externalIsOpen, onClose } = {}) {
     const [internalIsOpen, setInternalIsOpen] = useState(false);
@@ -30,11 +31,18 @@ export default function ChatBot({ isOpen: externalIsOpen, onClose } = {}) {
         "🏠 Hi! SkyRan Real Estate at your service!",
     ];
 
-    const [messages, setMessages] = useState([
+    const messageIdRef = useRef(2);
+    const nextMessageId = () => {
+        const id = messageIdRef.current;
+        messageIdRef.current += 1;
+        return id;
+    };
+
+    const [messages, setMessages] = useState(() => [
         {
             id: 1,
             sender: "bot",
-            text: `${greetings[Math.floor(Math.random() * greetings.length)]}\n\nI'm your property assistant, and I'm super excited to help you discover amazing  properties in Dubai! 🚀\n\nLet's make this quick and easy. I just need to know your budget and preferred developer.\n\nFirst things first - what's your budget range? 💰`,
+            text: `${greetings[Math.floor(Math.random() * greetings.length)]}\n\nI'm your property assistant, and I'm super excited to help you discover amazing properties in Dubai! 🚀\n\nLet's make this quick and easy. I just need to know your budget and preferred developer.\n\nFirst things first - what's your budget range? 💰`,
             options: ["Under 1M", "1M - 2M", "2M - 5M", "Custom Budget"],
         },
     ]);
@@ -42,6 +50,7 @@ export default function ChatBot({ isOpen: externalIsOpen, onClose } = {}) {
     const [currentStep, setCurrentStep] = useState(0);
     const [searchData, setSearchData] = useState({});
     const [isSearching, setIsSearching] = useState(false);
+    const [localProperties, setLocalProperties] = useState([]);
 
     const chatRef = useRef(null);
 
@@ -94,6 +103,85 @@ export default function ChatBot({ isOpen: externalIsOpen, onClose } = {}) {
         return parsed;
     };
 
+    const normalizeText = (text) =>
+        String(text || "")
+            .toLowerCase()
+            .normalize("NFKD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^\p{L}\p{N}\s]/gu, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+
+    const isPropertyDetailsQuestion = (text) => {
+        const q = normalizeText(text);
+        return /(detail|details|describe|description|about|tell me|info|information|property|project)/.test(q);
+    };
+
+    const findMatchingProperties = (text) => {
+        const q = normalizeText(text);
+        if (!q) return [];
+        const tokens = q.split(" ").filter((t) => t.length > 2);
+        return localProperties
+            .map((property) => {
+                const searchable = normalizeText([
+                    property.title,
+                    property.titleNative,
+                    property.slug,
+                    property.developer,
+                    property.location?.area,
+                ].join(" "));
+
+                let score = 0;
+                if (searchable.includes(q)) score += 6;
+                for (const token of tokens) {
+                    if (searchable.includes(token)) score += 1;
+                }
+                return { property, score };
+            })
+            .filter((item) => item.score > 0)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 5)
+            .map((item) => item.property);
+    };
+
+    const handlePropertyDetailsQuestion = async (userInput) => {
+        if (!localProperties.length) return false;
+        const matches = findMatchingProperties(userInput);
+        if (!matches.length) {
+            addMessage(
+                "I couldn't identify that property yet. Please share the property name (or part of it), and I'll fetch the details for you.",
+                ["Start New Search", "Contact Agent"]
+            );
+            return true;
+        }
+
+        const detailed = await Promise.all(
+            matches.slice(0, 3).map(async (property) => {
+                const description = await getDescriptionForProperty(property);
+                return { property, description };
+            })
+        );
+
+        const top = detailed[0];
+        const summary = top.description
+            ? top.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 260)
+            : "Detailed description is not available yet for this property.";
+
+        addMessage(
+            `Here are the closest property matches I found.\n\nTop match: ${top.property.title}\n${summary}${summary.length >= 260 ? "..." : ""}\n\nOpen any card below to view full details.`,
+            ["Start New Search", "Contact Agent"],
+            false,
+            detailed.map(({ property }) => ({
+                id: property.id,
+                title: property.title,
+                price: property.price || 0,
+                image: property.image,
+                city: property.location?.area || "Dubai",
+            }))
+        );
+        return true;
+    };
+
     // Auto-scroll
     useEffect(() => {
         if (chatRef.current) {
@@ -101,9 +189,21 @@ export default function ChatBot({ isOpen: externalIsOpen, onClose } = {}) {
         }
     }, [messages]);
 
+    useEffect(() => {
+        let isMounted = true;
+        fetchLocalProperties()
+            .then((list) => {
+                if (isMounted) setLocalProperties(Array.isArray(list) ? list : []);
+            })
+            .catch(() => {
+                if (isMounted) setLocalProperties([]);
+            });
+        return () => { isMounted = false; };
+    }, []);
+
     const addMessage = (text, options, isTyping = false, properties = []) => {
         const message = {
-            id: Date.now(),
+            id: nextMessageId(),
             sender: "bot",
             text,
             options,
@@ -114,7 +214,7 @@ export default function ChatBot({ isOpen: externalIsOpen, onClose } = {}) {
     };
 
     const handleOptionClick = (option) => {
-        const userMsg = { id: Date.now(), sender: "user", text: option };
+        const userMsg = { id: nextMessageId(), sender: "user", text: option };
         setMessages(prev => [...prev, userMsg]);
 
         const actions = {
@@ -242,55 +342,23 @@ export default function ChatBot({ isOpen: externalIsOpen, onClose } = {}) {
     const performSearch = async (customSearchData) => {
         setIsSearching(true);
         const dataToUse = customSearchData || searchData;
-        const baseUrl = `${import.meta.env.VITE_API_URL}/projects`;
-
-        const requestBody = {
-            page: 1, limit: 100,
-            include_developer: true,
-            category: "Off_plan" // Force OFF PLAN as main category
-        };
-
-        if (dataToUse.minPrice) requestBody.min_price = dataToUse.minPrice;
-        if (dataToUse.maxPrice) requestBody.max_price = Math.min(dataToUse.maxPrice, 5000000);
-        else requestBody.max_price = 5000000;
-
-        if (dataToUse.developer && dataToUse.developer !== "Any Developer") {
-            // Use developer name as search query works best with this specific API
-            requestBody.search = dataToUse.developer;
-        }
-
-        addMessage("🔍 Searching our exclusive off-plan collection...", undefined, true);
+        addMessage("🔍 Searching our property collection...", undefined, true);
 
         try {
-            const response = await fetch(baseUrl, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(requestBody),
-            });
-
-            if (!response.ok) throw new Error("API Error");
-            const json = await response.json();
-
-            let items = [];
-            if (json.data && Array.isArray(json.data.data)) items = json.data.data;
-            else if (json.data && Array.isArray(json.data)) items = json.data;
-
-            // Filter logic if needed client side (API 'search' is broad)
-            if (dataToUse.developer && dataToUse.developer !== "Any Developer") {
-                items = items.filter(i => {
-                    const devName = i.dev?.Company?.name || i.developer?.Company?.name || i.dev_name || "";
-                    return devName.toLowerCase().includes(dataToUse.developer.toLowerCase());
-                });
+            let results = [...localProperties];
+            if (dataToUse.minPrice != null) {
+                results = results.filter((p) => (p.price || 0) >= dataToUse.minPrice);
             }
-
-            // Map to consistent format
-            const results = items.map(item => ({
-                id: item._id || item.id,
-                title: item.title || item.name || "Property",
-                price: item.price || item.min_price || 0,
-                image: (item.cover_image && item.cover_image.startsWith('http')) ? item.cover_image : "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?w=1200",
-                city: item.location_name || item.address || "Dubai"
-            }));
+            if (dataToUse.maxPrice != null) {
+                results = results.filter((p) => (p.price || 0) <= Math.min(dataToUse.maxPrice, 5000000));
+            } else {
+                results = results.filter((p) => (p.price || 0) <= 5000000);
+            }
+            if (dataToUse.developer && dataToUse.developer !== "Any Developer") {
+                results = results.filter((p) =>
+                    String(p.developer || "").toLowerCase().includes(dataToUse.developer.toLowerCase())
+                );
+            }
 
             setTimeout(() => {
                 if (results.length > 0) {
@@ -298,7 +366,13 @@ export default function ChatBot({ isOpen: externalIsOpen, onClose } = {}) {
                         `🎉 I found ${results.length} properties matching your criteria! Here are some top picks:`,
                         ["Start New Search", "Contact Agent"],
                         false,
-                        results.slice(0, 5)
+                        results.slice(0, 5).map((property) => ({
+                            id: property.id,
+                            title: property.title,
+                            price: property.price || 0,
+                            image: property.image,
+                            city: property.location?.area || "Dubai",
+                        }))
                     );
                 } else {
                     addMessage(
@@ -318,30 +392,31 @@ export default function ChatBot({ isOpen: externalIsOpen, onClose } = {}) {
         }
     };
 
-    const handleSend = () => {
+    const handleSend = async () => {
         if (!input.trim()) return;
-        const userMsg = { id: Date.now(), sender: "user", text: input };
+        const userMsg = { id: nextMessageId(), sender: "user", text: input };
         setMessages(prev => [...prev, userMsg]);
         const userInput = input;
         setInput("");
+
+        if (isPropertyDetailsQuestion(userInput)) {
+            const handled = await handlePropertyDetailsQuestion(userInput);
+            if (handled) return;
+        }
 
         // Simple pass through to bot response logic
         setTimeout(() => handleBotResponse(userInput), 1000);
     };
 
-    // Render Portal
-    const ChatBotContent = () => {
-        if (typeof window === 'undefined') return null;
-
-        return createPortal(
+    const chatPortal = typeof window !== 'undefined' ? createPortal(
             <AnimatePresence>
                 {isOpen && (
-                    <div className="fixed inset-0 z-[9999] flex items-end justify-end p-4 md:p-6 pointer-events-none">
+                    <div className="fixed inset-0 z-[9999] flex items-end justify-end p-3 sm:p-4 md:p-6 pointer-events-none">
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9 }}
-                            className="relative z-[10000] w-full max-w-md h-[550px] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col pointer-events-auto"
+                            className="relative z-[10000] w-full max-w-md h-[min(550px,calc(100vh-5rem))] sm:h-[min(550px,calc(100vh-6rem))] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col pointer-events-auto"
                         >
                             {/* Header */}
                             <div className="bg-[#1A1F56] px-5 py-4 flex items-center justify-between">
@@ -447,8 +522,7 @@ export default function ChatBot({ isOpen: externalIsOpen, onClose } = {}) {
                 )}
             </AnimatePresence>,
             document.body
-        );
-    };
+        ) : null;
 
     return (
         <>
@@ -457,12 +531,12 @@ export default function ChatBot({ isOpen: externalIsOpen, onClose } = {}) {
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     onClick={handleOpen}
-                    className="fixed bottom-6 right-6 z-[9990] w-14 h-14 bg-[#1A1F56] rounded-full flex items-center justify-center text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all text-sm"
+                    className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9990] w-12 h-12 sm:w-14 sm:h-14 bg-[#1A1F56] rounded-full flex items-center justify-center text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all text-sm"
                 >
-                    <MessageCircle size={28} />
+                    <MessageCircle size={24} className="sm:w-7 sm:h-7" />
                 </motion.button>
             )}
-            <ChatBotContent />
+            {chatPortal}
         </>
     );
 }
